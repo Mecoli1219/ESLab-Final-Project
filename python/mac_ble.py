@@ -13,10 +13,10 @@ BUTTON_UUID = "0000a001-0000-1000-8000-00805f9b34fb"  # Replace with the actual 
 TOTAL_DATA = {
     "px": 0,
     "py": 0,
-    "pz": 0,
-    "gx": 0,
-    "gy": 0,
-    "gz": 0,
+    # "pz": 0,
+    # "gx": 0,
+    # "gy": 0,
+    # "gz": 0,
     "count": 0,
 }
 EXE_COUNT = 1
@@ -46,10 +46,10 @@ def byte_to_float(byte):
 def get_command():
     px = TOTAL_DATA["px"] / (EXE_COUNT)
     py = TOTAL_DATA["py"] / (EXE_COUNT)
-    pz = TOTAL_DATA["pz"] / (EXE_COUNT)
-    gx = TOTAL_DATA["gx"] / (EXE_COUNT)
-    gy = TOTAL_DATA["gy"] / (EXE_COUNT)
-    gz = TOTAL_DATA["gz"] / (EXE_COUNT)
+    # pz = TOTAL_DATA["pz"] / (EXE_COUNT)
+    # gx = TOTAL_DATA["gx"] / (EXE_COUNT)
+    # gy = TOTAL_DATA["gy"] / (EXE_COUNT)
+    # gz = TOTAL_DATA["gz"] / (EXE_COUNT)
     # print(f"p = ({px}, {py}, {pz})\tg = ({gx}, {gy}, {gz})")
     if abs(px) < threshold:
         px = 0
@@ -75,29 +75,17 @@ def exec_command(command):
 
 
 async def notification_handler(sender: int, data: bytearray):
+    print(data)
     px = int.from_bytes(data[0:2], byteorder="little", signed=True)
     py = int.from_bytes(data[2:4], byteorder="little", signed=True)
-    pz = int.from_bytes(data[4:6], byteorder="little", signed=True)
-    gx = byte_to_float(data[8:12])
-    gy = byte_to_float(data[12:16])
-    gz = byte_to_float(data[16:20])
-    # print(f"p = ({px}, {py}, {pz})\tg = ({gx}, {gy}, {gz})")
     TOTAL_DATA["px"] += px
     TOTAL_DATA["py"] += py
-    TOTAL_DATA["pz"] += pz
-    TOTAL_DATA["gx"] += gx
-    TOTAL_DATA["gy"] += gy
-    TOTAL_DATA["gz"] += gz
     TOTAL_DATA["count"] += 1
     if TOTAL_DATA["count"] == EXE_COUNT:
         command = get_command()
         exec_command(command)
         TOTAL_DATA["px"] = 0
         TOTAL_DATA["py"] = 0
-        TOTAL_DATA["pz"] = 0
-        TOTAL_DATA["gx"] = 0
-        TOTAL_DATA["gy"] = 0
-        TOTAL_DATA["gz"] = 0
         TOTAL_DATA["count"] = 0
 
 

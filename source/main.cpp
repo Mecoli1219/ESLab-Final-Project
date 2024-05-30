@@ -53,12 +53,13 @@ public:
                                             _button_service(NULL),
                                             _button_uuid(ButtonService::BUTTON_SERVICE_UUID),
                                             _pDataXYZ(),
-                                            _gDataXYZ(),
-                                            _lsm6dsl_service(ble, _pDataXYZ, _gDataXYZ),
+                                            _lsm6dsl_service(ble, _pDataXYZ),
                                             _lsm6dsl_uuid(LSM6DSLService::LSM6DSL_SERVICE_UUID),
 
                                             _adv_data_builder(_adv_buffer)
     {
+        // TODO: Fill the buffer 
+        // while not full pDataX, pDataY => fill it
     }
 
     void start()
@@ -156,9 +157,9 @@ private:
     void update_sensor_value()
     {
         BSP_ACCELERO_AccGetXYZ(_pDataXYZ);
-        BSP_GYRO_GetXYZ(_gDataXYZ);
-
-        _lsm6dsl_service.updateLSM6DSLState(_pDataXYZ, _gDataXYZ);
+        if (!(_pDataXYZ[0] < 300 && _pDataXYZ[0] > -300 && _pDataXYZ[1] < 300 && _pDataXYZ[1] > -300)){
+            _lsm6dsl_service.updateLSM6DSLState(_pDataXYZ);
+        }
     }
 
     /* these implement ble::Gap::EventHandler */
@@ -213,7 +214,6 @@ private:
     int _count;
 
     int16_t _pDataXYZ[3];
-    float _gDataXYZ[3];
     LSM6DSLService _lsm6dsl_service;
     UUID _lsm6dsl_uuid;
 
@@ -237,7 +237,6 @@ int main()
 {
     mbed_trace_init();
     BSP_ACCELERO_Init();
-    BSP_GYRO_Init();
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);

@@ -29,33 +29,29 @@ public:
         {
             int16_t px;
             int16_t py;
-            int16_t pz;
-            float gx;
-            float gy;
-            float gz;
+            // int16_t pz;
+            // float gx;
+            // float gy;
+            // float gz;
         };
-        uint8_t row[20];
+        uint8_t row[4];
 
-        SensorValue(int16_t *pDataXYZ, float *gDataXYZ)
+        SensorValue(int16_t *pDataXYZ)
         {
             px = pDataXYZ[0];
             py = pDataXYZ[1];
-            pz = pDataXYZ[2];
-            gx = gDataXYZ[0];
-            gy = gDataXYZ[1];
-            gz = gDataXYZ[2];
+            // pz = pDataXYZ[2];
+            // gx = gDataXYZ[0];
+            // gy = gDataXYZ[1];
+            // gz = gDataXYZ[2];
         }
 
-        SensorValue() : px(0), py(0), pz(0), gx(0), gy(0), gz(0) {}
+        SensorValue() : px(0), py(0) {}
 
-        void updateSensorValue(int16_t *pDataXYZ, float *gDataXYZ)
+        void updateSensorValue(int16_t *pDataXYZ)
         {
             px = pDataXYZ[0];
             py = pDataXYZ[1];
-            pz = pDataXYZ[2];
-            gx = gDataXYZ[0];
-            gy = gDataXYZ[1];
-            gz = gDataXYZ[2];
             // px = 1;
             // py = 2;
             // pz = 3;
@@ -82,9 +78,8 @@ public:
 
     LSM6DSLService(
         BLE &_ble,
-        int16_t *pDataXYZ,
-        float *gDataXYZ) : ble(_ble),
-                           sensorData(pDataXYZ, gDataXYZ),
+        int16_t *pDataXYZ) : ble(_ble),
+                           sensorData(pDataXYZ),
                            LSM6DSLState(
                                LSM6DSLService::LSM6DSL_STATE_CHARACTERISTIC_UUID,
                                //    reinterpret_cast<SensorValue *>(&sensorData),
@@ -101,9 +96,9 @@ public:
         ble.gattServer().addService(myService);
     }
 
-    void updateLSM6DSLState(int16_t *pDataXYZ, float *gDataXYZ)
+    void updateLSM6DSLState(int16_t *pDataXYZ)
     {
-        sensorData.updateSensorValue(pDataXYZ, gDataXYZ);
+        sensorData.updateSensorValue(pDataXYZ);
         ble.gattServer().write(
             LSM6DSLState.getValueHandle(),
             sensorData.getPointer(),
