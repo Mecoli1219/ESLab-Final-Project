@@ -31,10 +31,10 @@ using namespace std::literals::chrono_literals;
 const static char DEVICE_NAME[] = "Group1";
 
 static events::EventQueue event_queue(/* event count */ 32 * EVENTS_EVENT_SIZE);
-// static events::EventQueue event_queue2(/* event count */ 32 * EVENTS_EVENT_SIZE);
 
 static int count_press = 0;
 int idle_time = 0;
+bool isConnected = false;
 Thread t;
 
 class ControlBLE : ble::Gap::EventHandler
@@ -43,10 +43,8 @@ public:
     ControlBLE(
         BLE &ble,
         events::EventQueue &event_queue,
-        // events::EventQueue &event_queue2,
         int count) : _ble(ble),
                                             _event_queue(event_queue),
-                                            // _event_queue2(event_queue2),
                                             _count(count),
                                             _led1(LED1, 1),
                                             _button(BLE_BUTTON_PIN_NAME, BLE_BUTTON_PIN_PULL),
@@ -110,8 +108,6 @@ private:
             ble::adv_interval_t(ble::millisecond_t(100)));
 
         _adv_data_builder.setFlags();
-        // _adv_data_builder.setAppearance(ble::adv_data_appearance_t::GENERIC_HEART_RATE_SENSOR);
-        // _adv_data_builder.setLocalServiceList({&_heartrate_uuid, 1});
         _adv_data_builder.setLocalServiceList(mbed::make_Span(&_button_uuid, 1));
         _adv_data_builder.setLocalServiceList({&_lsm6dsl_uuid, 1});
         _adv_data_builder.setName(DEVICE_NAME);
@@ -153,19 +149,20 @@ private:
 
     void update_sensor_value()
     {
-        if(idle_time <= 50 || idle_time%10 == 0){
-            BSP_ACCELERO_AccGetXYZ(_pDataXYZ);
-            printf("hello");
-            if (!(_pDataXYZ[0] < 300 && _pDataXYZ[0] > -300 && _pDataXYZ[1] < 300 && _pDataXYZ[1] > -300)){
-                idle_time = 0;
-                _lsm6dsl_service.updateLSM6DSLState(_pDataXYZ);
-                
-            }else{
+        if(isConnected){
+            if(idle_time <= 50 || idle_time%10 == 0){
+                BSP_ACCELERO_AccGetXYZ(_pDataXYZ);
+                if (!(_pDataXYZ[0] < 300 && _pDataXYZ[0] > -300 && _pDataXYZ[1] < 300 && _pDataXYZ[1] > -300)){
+                    idle_time = 0;
+                    _lsm6dsl_service.updateLSM6DSLState(_pDataXYZ);
+                    
+                }else{
+                    idle_time = idle_time + 1;
+                }
+            }
+            else{
                 idle_time = idle_time + 1;
             }
-        }
-        else{
-            idle_time = idle_time + 1;
         }
     }
 
@@ -177,6 +174,7 @@ private:
         if (event.getStatus() == ble_error_t::BLE_ERROR_NONE)
         {
             printf("Client connected, you may now subscribe to updates\r\n");
+            isConnected = true;
         }
     }
 
@@ -184,6 +182,7 @@ private:
     virtual void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &event)
     {
         printf("Client disconnected, restarting advertising\r\n");
+        isConnected = false;
 
         ble_error_t error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
 
@@ -209,15 +208,9 @@ private:
         _event_queue.call(Callback<void(int)>(_button_service, &ButtonService::updateButtonState), ret);
     }
 
-    // void blink(void)
-    // {
-    //     _led1 = !_led1;
-    // }
-
 private:
     BLE &_ble;
     events::EventQueue &_event_queue;
-    // events::EventQueue &_event_queue2;
     int _count;
 
     int16_t _pDataXYZ[3];
@@ -237,7 +230,6 @@ private:
 void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 {
     event_queue.call(Callback<void()>(&context->ble, &BLE::processEvents));
-    // event_queue2.call(Callback<void()>(&context->ble, &BLE::processEvents));
 }
 
 int main()
