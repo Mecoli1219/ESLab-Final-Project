@@ -34,7 +34,7 @@ static events::EventQueue event_queue(/* event count */ 32 * EVENTS_EVENT_SIZE);
 // static events::EventQueue event_queue2(/* event count */ 32 * EVENTS_EVENT_SIZE);
 
 static int count_press = 0;
-
+int idle_time = 0;
 Thread t;
 
 class ControlBLE : ble::Gap::EventHandler
@@ -66,10 +66,7 @@ public:
     {
         _ble.init(this, &ControlBLE::on_init_complete);
 
-        // _event_queue.call_every(500, this, &ControlBLE::blink);
-        // t.start(callback(&_event_queue2, &EventQueue::dispatch_forever));
         _event_queue.dispatch_forever();
-        // _event_queue2.dispatch_forever();
     }
 
 private:
@@ -156,9 +153,19 @@ private:
 
     void update_sensor_value()
     {
-        BSP_ACCELERO_AccGetXYZ(_pDataXYZ);
-        if (!(_pDataXYZ[0] < 300 && _pDataXYZ[0] > -300 && _pDataXYZ[1] < 300 && _pDataXYZ[1] > -300)){
-            _lsm6dsl_service.updateLSM6DSLState(_pDataXYZ);
+        if(idle_time <= 50 || idle_time%10 == 0){
+            BSP_ACCELERO_AccGetXYZ(_pDataXYZ);
+            printf("hello");
+            if (!(_pDataXYZ[0] < 300 && _pDataXYZ[0] > -300 && _pDataXYZ[1] < 300 && _pDataXYZ[1] > -300)){
+                idle_time = 0;
+                _lsm6dsl_service.updateLSM6DSLState(_pDataXYZ);
+                
+            }else{
+                idle_time = idle_time + 1;
+            }
+        }
+        else{
+            idle_time = idle_time + 1;
         }
     }
 
